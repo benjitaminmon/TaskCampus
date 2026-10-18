@@ -106,3 +106,25 @@ body {
   background-color: #eff6ff;
   border-color: #2563eb;
 }
+
+/* Tutorial 07: estado visual de las tareas y resumen */
+.task-title--completed {
+  text-decoration: line-through;
+  color: #94a3b8;
+}
+
+.summary-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+
+.task-button:disabled {
+  background-color: #93c5fd;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
