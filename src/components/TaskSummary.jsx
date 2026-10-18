@@ -1,16 +1,22 @@
-function TaskSummary({ tareas = [] }) {
-  const total = tareas.length;
-  const completadas = tareas.filter((t) => t.completada).length;
-  const pendientes = tareas.filter((t) => !t.completada).length;
+import { useState } from "react";
+
+const TaskSummary = () => {
+  const [completadas, setCompletadas] = useState(0);
+
+  const marcarCompletada = () => {
+    setCompletadas(completadas + 1);
+  };
 
   return (
-    <section className="card">
-      <h2 className="section-title">Resumen de Tareas</h2>
-      <p>Total de tareas: {total}</p>
-      <p>Tareas completadas: {completadas}</p>
-      <p>Tareas pendientes: {pendientes}</p>
-    </section>
+    <div>
+      <p>
+        Tareas completadas: <strong>{completadas}</strong>
+      </p>
+      <button onClick={marcarCompletada} className="task-button">
+        Marcar como completada
+      </button>
+    </div>
   );
-}
+};
 
 export default TaskSummary;
