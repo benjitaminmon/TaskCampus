@@ -1,9 +1,9 @@
-function ActionButton({ onReview }) {
+function ActionButton({ label, onAction, disabled = false }) {
   return (
-    <section>
-      <h2>Acciones</h2>
-      <button onClick={onReview} className="task-button">
-        Revisar tareas
+    <section className="card">
+      <h2 className="section-title">Acciones</h2>
+      <button onClick={onAction} className="task-button" disabled={disabled}>
+        {label}
       </button>
     </section>
   )
