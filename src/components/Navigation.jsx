@@ -2,7 +2,7 @@ import Button from "./Button";
 
 const Navigation = ({ vistaActiva, setVistaActiva }) => {
   return (
-    <nav style={{ display: "flex", gap: "10px", justifyContent: "center", marginBottom: "20px" }}>
+    <nav className="navigation" aria-label="Vistas de TaskCampus">
       <Button
         label="📊 Resumen"
         variant={vistaActiva === "resumen" ? "primary" : "secondary"}
