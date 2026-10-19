@@ -9,7 +9,6 @@ import NewTaskView from "./views/NewTaskView";
 import "./App.css";
 
 const App = () => {
-  // Hook personalizado (CRUD y llamadas a API)
   const {
     tareas,
     cargando,
@@ -20,35 +19,33 @@ const App = () => {
     eliminarTarea,
   } = useTareas();
 
-  // INVESTIGACIÓN 1: Estado para la navegación entre vistas
   const [vistaActiva, setVistaActiva] = useState("resumen");
-
-  // Estado para el modal de eliminación
   const [tareaAEliminar, setTareaAEliminar] = useState(null);
-
-  // INVESTIGACIÓN 2: Estado derivado (Filtros levantados a App)
   const [filtro, setFiltro] = useState("todas");
+  
+  const [busqueda, setBusqueda] = useState(""); 
 
-  // Cálculos derivados automáticos (no usan useState extra)
   const pendientesCount = tareas.filter((t) => !t.completada).length;
   const completadasCount = tareas.filter((t) => t.completada).length;
 
   const tareasFiltradas = tareas.filter((t) => {
-    if (filtro === "pendientes") return !t.completada;
-    if (filtro === "completadas") return t.completada;
-    return true;
+    let coincideEstado = true;
+    if (filtro === "pendientes") coincideEstado = !t.completada;
+    if (filtro === "completadas") coincideEstado = t.completada;
+
+    const coincideTexto = t.titulo.toLowerCase().includes(busqueda.toLowerCase());
+
+    return coincideEstado && coincideTexto;
   });
 
-  // Actualizar el título de la pestaña del navegador
   useEffect(() => {
     document.title = `TaskCampus (${pendientesCount} pendientes)`;
   }, [pendientesCount]);
 
-  // Handlers para las acciones
   const handleAgregar = async (titulo) => {
     const resultado = await crearTarea(titulo);
     if (resultado.exito) {
-      setVistaActiva("tareas"); // Redirige a la lista tras agregar con éxito
+      setVistaActiva("tareas"); 
     }
   };
 
@@ -68,10 +65,8 @@ const App = () => {
     <div className="app-container">
       <Header title="TaskCampus" description="Gestiona tus tareas académicas" />
       
-      {/* Barra de navegación siempre visible */}
       <Navigation vistaActiva={vistaActiva} setVistaActiva={setVistaActiva} />
 
-      {/* RENDERIZADO CONDICIONAL DE LAS VISTAS */}
       {vistaActiva === "resumen" && (
         <SummaryView
           total={tareas.length}
@@ -87,6 +82,8 @@ const App = () => {
           tareas={tareasFiltradas}
           filtro={filtro}
           setFiltro={setFiltro}
+          busqueda={busqueda}
+          setBusqueda={setBusqueda}
           onCompletar={handleCompletar}
           onEliminar={setTareaAEliminar}
           onEditar={actualizarTarea}
@@ -99,7 +96,6 @@ const App = () => {
         <NewTaskView onAgregar={handleAgregar} />
       )}
 
-      {/* Modal de confirmación global */}
       <Modal
         visible={tareaAEliminar !== null}
         mensaje="¿Seguro que deseas eliminar esta tarea? Esta acción no se puede deshacer."

@@ -1,7 +1,7 @@
 import Card from "../components/Card";
 import TaskList from "../components/TaskList";
 
-const TasksView = ({ tareas, onCompletar, onEliminar, onEditar, filtro, setFiltro, cargando, error }) => {
+const TasksView = ({ tareas, onCompletar, onEliminar, onEditar, filtro, setFiltro, busqueda, setBusqueda, cargando, error }) => {
   return (
     <Card titulo="Mis tareas">
       <TaskList
@@ -11,6 +11,8 @@ const TasksView = ({ tareas, onCompletar, onEliminar, onEditar, filtro, setFiltr
         onEditar={onEditar}
         filtro={filtro}
         setFiltro={setFiltro}
+        busqueda={busqueda}
+        setBusqueda={setBusqueda}
         cargando={cargando}
         error={error}
       />
