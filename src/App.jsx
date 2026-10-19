@@ -89,6 +89,7 @@ const App = () => {
           setFiltro={setFiltro}
           onCompletar={handleCompletar}
           onEliminar={setTareaAEliminar}
+          onEditar={actualizarTarea}
           cargando={cargando}
           error={error}
         />
