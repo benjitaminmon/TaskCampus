@@ -180,3 +180,39 @@ body {
   margin-top: 20px;
 }
 /* Fin estilos para componente Modal.jsx */
+
+/*Estililos tutorial 12*/
+.summary-grid {
+  display: flex;
+  gap: 24px;
+  flex-wrap: wrap;}
+.summary-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;}
+.summary-numero {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1d4ed8;}
+.summary-label {
+  font-size: 0.8rem;
+  color: #64748b;}
+/*Fin estililos tutorial 12*/
+
+.task-form {
+  display: flex;
+  gap: 10px;}
+.task-input {
+  flex: 1;
+  padding: 8px 14px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.2s;}
+.task-input:focus {
+  border-color: #2563eb;}
+.form-error {
+  color: #dc2626;
+  font-size: 0.85rem;
+  margin-top: 6px;}
