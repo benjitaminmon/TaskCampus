@@ -142,6 +142,13 @@ body {
   opacity: 0.5;
   cursor: not-allowed;
 }
+.btn-success {
+  background-color: #198754;
+  color: #ffffff;
+}
+.btn-success:hover {
+  background-color: #146c43;
+}
 /* Fin estilos para componente Button.jsx */
 
 /* Estilos para componente Modal.jsx */

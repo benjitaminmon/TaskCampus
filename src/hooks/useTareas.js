@@ -1,83 +1,154 @@
-// Importamos los hooks necesarios de React
-// useState: para manejar los datos, el estado de carga y los errores
-// useEffect: para ejecutar el fetch cuando el componente se monta
+// Importamos los hooks de React que necesitamos:
+// - useState: para guardar datos que pueden cambiar (tareas, estados de carga y error)
+// - useEffect: para ejecutar código automáticamente al montar el componente (cargar datos)
 import { useState, useEffect } from "react";
 
-// Custom hook: es una función que comienza con "use" y encapsula
-// lógica de estado reutilizable. En este caso, toda la lógica
-// de cargar tareas desde la API queda aquí y no en App.jsx
+// URL base de la API. La guardamos en una constante para no repetirla en cada fetch
+// Si mañana cambia la URL, solo se modifica aquí
+const API_URL = "https://jsonplaceholder.typicode.com/todos";
+
+// Hook personalizado: es una función normal que empieza con "use"
+// Encapsula TODA la lógica de tareas (estado + llamadas a la API)
+// Los componentes que lo usen solo recibirán los datos y funciones, sin saber cómo funcionan
 const useTareas = () => {
 
-  // Estado 1: array donde se guardarán las tareas que devuelve la API
-  // Inicia vacío porque aún no hemos pedido nada
+  // Estado que almacena el array de tareas. Empieza vacío
   const [tareas, setTareas] = useState([]);
 
-  // Estado 2: indica si la petición está en curso
-  // Inicia en true porque al montar el componente la carga empieza de inmediato
+  // Estado booleano: true mientras se están cargando datos de la API
+  // Empieza en true porque la carga ocurre inmediatamente al montar
   const [cargando, setCargando] = useState(true);
 
-  // Estado 3: guarda el mensaje de error si la petición falla
-  // Inicia en null porque aún no hay ningún error
+  // Estado para guardar mensajes de error. null significa "sin error"
   const [error, setError] = useState(null);
 
-  // useEffect con array vacío [] -> se ejecuta UNA SOLA VEZ cuando el
-  // componente que usa este hook se monta. Ideal para cargar datos iniciales.
+  // useEffect con array vacío [] = se ejecuta UNA SOLA VEZ cuando el componente se monta
+  // Es el lugar correcto para cargar datos iniciales desde una API
   useEffect(() => {
 
-    // Definimos la función async DENTRO del useEffect
-    // (useEffect no puede ser async directamente, por eso se hace así)
+    // Definimos la función async adentro porque useEffect no puede ser async directamente
     const cargarTareas = async () => {
       try {
-        // fetch hace la petición GET a la API
-        // ?_limit=10 le pide a JSONPlaceholder que devuelva solo 10 tareas
-        const response = await fetch(
-          "https://jsonplaceholder.typicode.com/todos?_limit=10"
-        );
+        // fetch hace una petición GET a la API
+        // ?_limit=10 es un parámetro que le dice a JSONPlaceholder "dame solo 10 tareas"
+        const res = await fetch(`${API_URL}?_limit=10`);
 
-        // response.ok es true si el servidor respondió con código 200-299
-        // Si respondió con 404, 500, etc. -> lanzamos un error manualmente
-        if (!response.ok) {
-          throw new Error(`Error HTTP: ${response.status}`);
-        }
+        // res.ok es true si el servidor respondió con código 200-299 (éxito)
+        // Si no, lanzamos un error manualmente para que lo capture el catch
+        if (!res.ok) throw new Error("Error al cargar las tareas");
 
-        // .json() convierte la respuesta (texto) a un array de objetos JavaScript
-        // await espera a que esa conversión termine antes de continuar
-        const data = await response.json();
+        // Convertimos la respuesta de texto JSON a un objeto JavaScript
+        const datos = await res.json();
 
-        // La API devuelve { id, title, completed, userId }
-        // Pero TaskCampus usa  { id, titulo, completada }
-        // map transforma cada objeto del formato API al formato propio
-        const tareasAdaptadas = data.map((item) => ({
-          id: item.id,
-          titulo: item.title,         // title -> titulo
-          completada: item.completed, // completed -> completada
+        // La API devuelve { id, title, completed } pero en nuestra app usamos { id, titulo, completada }
+        // map transforma cada objeto de la API al formato que necesitamos
+        const tareasFormateadas = datos.map((t) => ({
+          id: t.id,
+          titulo: t.title,         // renombramos title → titulo
+          completada: t.completed, // renombramos completed → completada
         }));
 
-        // Guardamos las tareas adaptadas en el estado
-        setTareas(tareasAdaptadas);
+        // Guardamos las tareas formateadas en el estado
+        setTareas(tareasFormateadas);
 
       } catch (err) {
-        // Si fetch falla (sin internet) o lanzamos el throw de arriba
-        // guardamos el mensaje de error en el estado para mostrarlo en la UI
+        // Si algo falló (red caída, error HTTP, etc.), guardamos el mensaje de error
+        // El componente podrá mostrar este mensaje al usuario
         setError(err.message);
 
       } finally {
-        // finally se ejecuta SIEMPRE: haya éxito o error
-        // Marcamos que la carga terminó para ocultar el spinner/mensaje de carga
+        // finally se ejecuta SIEMPRE, haya habido error o no
+        // Aquí apagamos el indicador de carga pase lo que pase
         setCargando(false);
       }
     };
 
     // Llamamos a la función que acabamos de definir
-    // (definirla y llamarla por separado es el patrón estándar con async en useEffect)
     cargarTareas();
 
-  }, []); // array vacío = solo se ejecuta al montar, nunca más
+  }, []); // [] = sin dependencias, solo se ejecuta al montar
 
-  // Retornamos los tres estados y setTareas para que el componente
-  // que use este hook pueda: mostrar las tareas, mostrar carga,
-  // mostrar errores, y también modificar las tareas (agregar/completar)
-  return { tareas, setTareas, cargando, error };
+
+  // POST — Crea una nueva tarea en la API y la agrega al estado local
+  const crearTarea = async (titulo) => {
+    try {
+      const res = await fetch(API_URL, {
+        method: "POST",                                   // Método HTTP para crear
+        headers: { "Content-Type": "application/json" },  // Le decimos que enviamos JSON
+        body: JSON.stringify({                            // Convertimos el objeto a texto JSON
+          title: titulo,
+          completed: false,
+          userId: 1,
+        }),
+      });
+
+      if (!res.ok) throw new Error("Error al crear la tarea");
+
+      // La API responde con la tarea creada (pero JSONPlaceholder siempre devuelve id: 201)
+      const nueva = await res.json();
+
+      // Como el id de la API no es confiable (siempre 201), usamos Date.now()
+      // que genera un número único basado en el tiempo actual (ej: 1715382600000)
+      const tareaLocal = {
+        id: Date.now(),
+        titulo: nueva.title,
+        completada: nueva.completed,
+      };
+
+      // Forma funcional de setTareas: prev es el array actual garantizado
+      // Ponemos la nueva tarea AL INICIO del array con spread
+      setTareas((prev) => [tareaLocal, ...prev]);
+
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  // PUT — Actualiza campos específicos de una tarea existente
+  // Recibe el id de la tarea y un objeto con los campos a cambiar (ej: { completada: true })
+  const actualizarTarea = async (id, cambios) => {
+    try {
+      // La URL incluye el id para apuntar a una tarea específica: /todos/5
+      const res = await fetch(`${API_URL}/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(cambios),
+      });
+      if (!res.ok) throw new Error("Error al actualizar la tarea");
+      // Actualizamos el estado local sin llamar a la API de nuevo (más eficiente)
+      // map recorre el array: si encuentra la tarea con ese id, la reemplaza por una NUEVA
+      // { ...t } copia todas las propiedades actuales, { ...cambios } sobreescribe solo las que cambiaron
+      // Las demás tareas (t.id !== id) se devuelven sin cambios
+      setTareas((prev) =>
+        prev.map((t) => (t.id === id ? { ...t, ...cambios } : t))
+      );
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  // DELETE — Elimina una tarea de la API y la quita del estado local
+  const eliminarTarea = async (id) => {
+    try {
+      const res = await fetch(`${API_URL}/${id}`, {
+        method: "DELETE", // No necesita body ni headers adicionales
+      });
+
+      if (!res.ok) throw new Error("Error al eliminar la tarea");
+
+      // filter devuelve un nuevo array sin la tarea eliminada
+      // Solo mantenemos las tareas cuyo id sea DIFERENTE al eliminado
+      setTareas((prev) => prev.filter((t) => t.id !== id));
+
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+  // Retornamos todo lo que los componentes pueden necesitar:
+  // - tareas: el array actual para mostrar en pantalla
+  // - cargando: para mostrar un spinner o mensaje "Cargando..."
+  // - error: para mostrar un mensaje si algo falló
+  // - crearTarea, actualizarTarea, eliminarTarea: funciones para modificar los datos
+  return { tareas, cargando, error, crearTarea, actualizarTarea, eliminarTarea };
 };
-
 export default useTareas;
