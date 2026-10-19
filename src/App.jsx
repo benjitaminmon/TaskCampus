@@ -1,101 +1,108 @@
 import { useState, useEffect } from "react";
 import useTareas from "./hooks/useTareas";
-import Card from "./components/Card";
 import Header from "./components/Header";
+import Navigation from "./components/Navigation";
 import Modal from "./components/Modal";
-import TaskList from "./components/TaskList";
-import TaskSummary from "./components/TaskSummary";
-import TaskForm from "./components/TaskForm";
+import SummaryView from "./views/SummaryView";
+import TasksView from "./views/TaskView";
+import NewTaskView from "./views/NewTaskView";
 import "./App.css";
 
 const App = () => {
+  // Hook personalizado (CRUD y llamadas a API)
   const {
     tareas,
     cargando,
+    operando,
     error,
     crearTarea,
     actualizarTarea,
     eliminarTarea,
   } = useTareas();
 
+  // INVESTIGACIÓN 1: Estado para la navegación entre vistas
+  const [vistaActiva, setVistaActiva] = useState("resumen");
+
+  // Estado para el modal de eliminación
   const [tareaAEliminar, setTareaAEliminar] = useState(null);
 
-  // NUEVO: estado de filtro levantado a App (lifting state up)
+  // INVESTIGACIÓN 2: Estado derivado (Filtros levantados a App)
   const [filtro, setFiltro] = useState("todas");
 
-  // NUEVO: lista filtrada derivada en App (no es otro useState)
+  // Cálculos derivados automáticos (no usan useState extra)
+  const pendientesCount = tareas.filter((t) => !t.completada).length;
+  const completadasCount = tareas.filter((t) => t.completada).length;
+
   const tareasFiltradas = tareas.filter((t) => {
-    if (filtro === "completadas") return t.completada;
     if (filtro === "pendientes") return !t.completada;
+    if (filtro === "completadas") return t.completada;
     return true;
   });
 
-  // Actualiza el título del navegador con las tareas pendientes
+  // Actualizar el título de la pestaña del navegador
   useEffect(() => {
-    const pendientes = tareas.filter((t) => !t.completada).length;
-    document.title = `TaskCampus (${pendientes} pendientes)`;
-  }, [tareas]);
+    document.title = `TaskCampus (${pendientesCount} pendientes)`;
+  }, [pendientesCount]);
 
-  // Temporizador con cleanup para evitar memory leaks
-  useEffect(() => {
-    const timer = setInterval(() => {
-      console.log("TaskCampus activo");
-    }, 5000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const handleAgregarTarea = (titulo) => {
-    crearTarea(titulo);
+  // Handlers para las acciones
+  const handleAgregar = async (titulo) => {
+    const resultado = await crearTarea(titulo);
+    if (resultado.exito) {
+      setVistaActiva("tareas"); // Redirige a la lista tras agregar con éxito
+    }
   };
 
-  const handleToggleCompletada = (id, completadaActual) => {
-    actualizarTarea(id, { completada: !completadaActual });
+  const handleCompletar = (idLocal) => {
+    const tarea = tareas.find((t) => t.id === idLocal);
+    if (tarea) {
+      actualizarTarea(idLocal, { completada: !tarea.completada });
+    }
   };
 
-  const handleConfirmarEliminacion = () => {
-    eliminarTarea(tareaAEliminar);
+  const handleEliminar = async () => {
+    await eliminarTarea(tareaAEliminar);
     setTareaAEliminar(null);
   };
 
   return (
     <div className="app-container">
       <Header title="TaskCampus" description="Gestiona tus tareas académicas" />
+      
+      {/* Barra de navegación siempre visible */}
+      <Navigation vistaActiva={vistaActiva} setVistaActiva={setVistaActiva} />
 
-      <Card titulo="Resumen de tareas">
-        <TaskSummary
+      {/* RENDERIZADO CONDICIONAL DE LAS VISTAS */}
+      {vistaActiva === "resumen" && (
+        <SummaryView
           total={tareas.length}
-          completadas={tareas.filter((t) => t.completada).length}
-          pendientes={tareas.filter((t) => !t.completada).length}
-          // NUEVO: datos derivados del filtro
+          completadas={completadasCount}
+          pendientes={pendientesCount}
           mostrando={tareasFiltradas.length}
           filtroActual={filtro}
         />
-      </Card>
-
-      <TaskForm onAgregar={handleAgregarTarea} />
-
-      {cargando && <p className="estado-carga">⏳ Cargando tareas...</p>}
-      {error && <p className="estado-error">⚠️ Error: {error}</p>}
-
-      {!cargando && !error && (
-        <Card titulo="Mis tareas">
-          <TaskList
-            // Ahora la lista ya viene filtrada desde App
-            tareas={tareasFiltradas}
-            // Filtro y setter levantados a App
-            filtro={filtro}
-            onCambiarFiltro={setFiltro}
-            // Toggle levantado a App
-            onToggle={handleToggleCompletada}
-            onEliminar={setTareaAEliminar}
-          />
-        </Card>
       )}
 
+      {vistaActiva === "tareas" && (
+        <TasksView
+          tareas={tareasFiltradas}
+          filtro={filtro}
+          setFiltro={setFiltro}
+          onCompletar={handleCompletar}
+          onEliminar={setTareaAEliminar}
+          cargando={cargando}
+          error={error}
+        />
+      )}
+
+      {vistaActiva === "nueva" && (
+        <NewTaskView onAgregar={handleAgregar} />
+      )}
+
+      {/* Modal de confirmación global */}
       <Modal
         visible={tareaAEliminar !== null}
         mensaje="¿Seguro que deseas eliminar esta tarea? Esta acción no se puede deshacer."
-        onConfirmar={handleConfirmarEliminacion}
+        onConfirmar={handleEliminar}
         onCancelar={() => setTareaAEliminar(null)}
       />
     </div>

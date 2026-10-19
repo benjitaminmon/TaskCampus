@@ -1,29 +1,22 @@
 import Button from "./Button";
 import Badge from "./Badge";
-import { useState } from "react";
 
-const TaskList = ({ tareas, onCompletar, onEliminar, onToggle }) => {
-  const [filtro, setFiltro] = useState("todas");
+const TaskList = ({ tareas, onCompletar, onEliminar, filtro, setFiltro, cargando, error }) => {
+  
+  // Renderizado condicional para estado de carga (RF11)
+  if (cargando) {
+    return <p style={{ textAlign: "center", color: "#64748b", padding: "20px" }}>⏳ Cargando tareas...</p>;
+  }
 
-  const tareasFiltradas = tareas.filter((t) => {
-    if (filtro === "pendientes") return !t.completada;
-    if (filtro === "completadas") return t.completada;
-    return true;
-  });
-
-  // Función unificada: usa onToggle si existe, si no usa onCompletar
-  const handleCompletar = (id, completadaActual) => {
-    if (onToggle) {
-      onToggle(id, completadaActual);
-    } else if (onCompletar) {
-      onCompletar(id);
-    }
-  };
+  // Renderizado condicional para estado de error (RF11)
+  if (error) {
+    return <p style={{ textAlign: "center", color: "#dc2626", padding: "20px" }}>⚠️ Error: {error}</p>;
+  }
 
   return (
     <div>
-      {/* Botones de filtro */}
-      <div style={{ display: "flex", gap: "8px", marginBottom: "12px" }}>
+      {/* Botones de filtro que actualizan el estado en App.jsx */}
+      <div style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
         <Button
           label="📋 Todas"
           onClick={() => setFiltro("todas")}
@@ -41,32 +34,42 @@ const TaskList = ({ tareas, onCompletar, onEliminar, onToggle }) => {
         />
       </div>
 
-      {tareasFiltradas.length === 0 && (
-        <p style={{ textAlign: "center", color: "#94a3b8" }}>
-          No hay tareas en esta categoría 🎉
-        </p>
-      )}
-
-      <ul className="task-list">
-        {tareasFiltradas.map((tarea) => (
-          <li key={tarea.id} className="task-item">
-
-            {/* ZONA IZQUIERDA: badge + título */}
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", flex: 1 }}>
-              <Badge texto={tarea.completada ? "completada" : "pendiente"} />
-              <span style={{
+      {/* Lista de tareas */}
+      <ul className="task-list" style={{ listStyle: "none", padding: 0 }}>
+        {tareas.map((tarea) => (
+          <li
+            key={tarea.id}
+            className="task-item"
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              backgroundColor: "#ffffff",
+              border: "1px solid #dbeafe",
+              borderRadius: "8px",
+              padding: "12px 16px",
+              marginBottom: "10px",
+            }}
+          >
+            {/* Zona Izquierda: Título y Badge */}
+            <span
+              style={{
                 textDecoration: tarea.completada ? "line-through" : "none",
                 color: tarea.completada ? "#94a3b8" : "inherit",
-              }}>
-                {tarea.titulo}
-              </span>
-            </div>
+                display: "flex",
+                alignItems: "center",
+                gap: "10px"
+              }}
+            >
+              <Badge texto={tarea.completada ? "completada" : "pendiente"} />
+              {tarea.titulo}
+            </span>
 
-            {/* ZONA DERECHA: botones */}
-            <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
+            {/* Zona Derecha: Botones de Acción */}
+            <div style={{ display: "flex", gap: "8px", alignItems: "center", flexShrink: 0 }}>
               <Button
                 label={tarea.completada ? "Desmarcar" : "Completar"}
-                onClick={() => handleCompletar(tarea.id, tarea.completada)}
+                onClick={() => onCompletar(tarea.id)}
                 variant={tarea.completada ? "success" : "primary"}
               />
               <Button
@@ -75,10 +78,16 @@ const TaskList = ({ tareas, onCompletar, onEliminar, onToggle }) => {
                 variant="danger"
               />
             </div>
-
           </li>
         ))}
       </ul>
+
+      {/* Renderizado condicional si no hay resultados para el filtro activo (RF11) */}
+      {tareas.length === 0 && (
+        <p style={{ textAlign: "center", color: "#94a3b8", marginTop: "20px" }}>
+          🎉 No hay tareas en esta categoría.
+        </p>
+      )}
     </div>
   );
 };
