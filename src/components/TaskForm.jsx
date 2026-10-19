@@ -1,22 +1,27 @@
 import { useState } from "react";
 import Button from "./Button";
+import { validarTitulo } from "../utils/validarTitulo";
 
-const TaskForm = ({ onAgregar }) => {
+const TaskForm = ({ onAgregar, creando }) => {
   const [titulo, setTitulo] = useState("");
   const [error, setError] = useState("");
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Validación (RF04)
-    if (titulo.trim().length < 3) {
-      setError("El título debe tener al menos 3 caracteres útiles.");
+
+    // Validación compartida con la edición (RF04)
+    const errorValidacion = validarTitulo(titulo);
+    if (errorValidacion) {
+      setError(errorValidacion);
       return;
     }
-    
-    onAgregar(titulo.trim());
-    setTitulo("");
     setError("");
+
+    // El campo se limpia solo si la creación funcionó
+    const ok = await onAgregar(titulo.trim());
+    if (ok) {
+      setTitulo("");
+    }
   };
 
   return (
@@ -28,10 +33,17 @@ const TaskForm = ({ onAgregar }) => {
           onChange={(e) => setTitulo(e.target.value)}
           placeholder="Escribe el título de la tarea..."
           className="task-input"
+          disabled={creando}
         />
-        <Button label="Agregar" variant="primary" />
+        {/* RF12: deshabilitado mientras se crea la tarea */}
+        <Button
+          type="submit"
+          label={creando ? "Agregando..." : "Agregar"}
+          variant="primary"
+          disabled={creando}
+        />
       </form>
-      
+
       {/* Mensaje de error condicional */}
       {error && <p className="form-error">{error}</p>}
     </div>

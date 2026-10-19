@@ -43,4 +43,33 @@ Por lo tanto, la carga inicial siempre traerá los mismos 10 registros. Las modi
 * **Fuentes consultadas:** Documentación oficial de React (Renderizado condicional y Elevación del estado).
 * **Archivos donde se aplicó:** `src/App.jsx`, `src/components/Navigation.jsx`.
 * **Procedimiento de verificación:** 
-  1. Ing
+  1. Ingresar a la aplicación y aplicar un filtro (ej. "Pendientes").
+  2. Hacer clic en "Nueva Tarea" en la barra de navegación.
+  3. Volver a hacer clic en "Tareas".
+  4. **Resultado esperado:** La vista cambia instantáneamente sin recargar el navegador, y el filtro "Pendientes" sigue activo, demostrando que el estado global no se pierde al desmontar la vista.
+
+### 2. Estado derivado
+* **Explicación:** Se evitó la creación de estados redundantes para los contadores y las listas filtradas. Todo se calcula al vuelo en cada renderizado basándose en el arreglo principal `tareas`, el `filtro` activo y el texto de `busqueda`.
+* **Fuentes consultadas:** Documentación oficial de React (Pensar en React - Identificar el estado mínimo).
+* **Archivos donde se aplicó:** `src/App.jsx` (cálculo de `tareasFiltradas`, `pendientesCount` y `completadasCount`).
+* **Procedimiento de verificación:** 
+  1. Crear una nueva tarea desde el formulario.
+  2. Ir a la vista de Resumen.
+  3. **Resultado esperado:** El contador de "Total de tareas" y "Tareas pendientes" aumentó en 1 automáticamente sin necesidad de llamar a un `setTotalTareas` independiente, garantizando sincronización absoluta.
+
+### 3. Actualización funcional del estado
+* **Explicación:** En operaciones que dependen del estado anterior (como agregar una tarea a la lista existente o modificar una en particular), se utilizó la forma funcional del actualizador de estado (`setTareas(prev => ...)`). Esto asegura que siempre se trabaje con la versión más reciente del estado y se eviten mutaciones directas.
+* **Fuentes consultadas:** Documentación oficial de React (Actualización de objetos y arrays en el estado).
+* **Archivos donde se aplicó:** `src/hooks/useTareas.js`.
+* **Procedimiento de verificación:** 
+  1. Ejecutar múltiples clics rápidos en el botón de completar diferentes tareas.
+  2. **Resultado esperado:** Todas las tareas seleccionadas cambian de estado correctamente. Si no se usara actualización funcional, los renderizados en lote podrían sobreescribir los cambios anteriores.
+
+### 4. Identificadores y API simulada
+* **Explicación:** JSONPlaceholder asigna estáticamente el `id: 201` a cualquier nuevo recurso creado mediante POST. Para evitar colisiones de claves (duplicate keys) en el renderizado de la lista, se genera un identificador local único (`Date.now()`) para cada tarea creada durante la sesión.
+* **Fuentes consultadas:** Documentación de JSONPlaceholder; Documentación de React (Renderizado de listas y Keys).
+* **Archivos donde se aplicó:** `src/hooks/useTareas.js` (función `crearTarea`).
+* **Procedimiento de verificación:** 
+  1. Crear dos tareas nuevas consecutivas ("Tarea A" y "Tarea B").
+  2. Eliminar la "Tarea A".
+  3. **Resultado esperado:** La "Tarea A" desaparece correctamente y la "Tarea B" se mantiene intacta. Si ambas tuvieran el `id: 201` entregado por la API, React tendría problemas de renderizado y el hook eliminaría la tarea incorrecta.

@@ -1,33 +1,30 @@
 import TaskItem from "./TaskItem";
 import Button from "./Button";
 
-// <-- NUEVO: Recibe busqueda y setBusqueda en las props
-const TaskList = ({ tareas, onCompletar, onEliminar, onEditar, filtro, setFiltro, busqueda, setBusqueda, cargando, error }) => {
-  
-  if (cargando) return <p style={{ textAlign: "center", color: "#64748b" }}>⏳ Cargando tareas...</p>;
-  if (error) return <p style={{ textAlign: "center", color: "#dc2626" }}>⚠️ Error: {error}</p>;
-
+const TaskList = ({
+  tareas,
+  totalTareas,
+  onCompletar,
+  onEliminar,
+  onEditar,
+  filtro,
+  setFiltro,
+  busqueda,
+  setBusqueda,
+  idsEnCurso,
+}) => {
   return (
     <div>
-      <div style={{ marginBottom: "16px" }}>
-        <input
-          type="text"
-          placeholder="🔍 Buscar por título..."
-          value={busqueda}
-          onChange={(e) => setBusqueda(e.target.value)}
-          style={{
-            width: "100%",
-            padding: "10px",
-            borderRadius: "6px",
-            border: "1px solid #cbd5e1",
-            fontSize: "0.95rem",
-            outline: "none",
-            boxSizing: "border-box"
-          }}
-        />
-      </div>
+      <input
+        type="search"
+        className="task-input task-busqueda"
+        placeholder="🔍 Buscar por título..."
+        value={busqueda}
+        onChange={(e) => setBusqueda(e.target.value)}
+        aria-label="Buscar tareas por título"
+      />
 
-      <div style={{ display: "flex", gap: "8px", marginBottom: "16px" }}>
+      <div className="task-filtros">
         <Button
           label="📋 Todas"
           onClick={() => setFiltro("todas")}
@@ -45,11 +42,12 @@ const TaskList = ({ tareas, onCompletar, onEliminar, onEditar, filtro, setFiltro
         />
       </div>
 
-      <ul className="task-list" style={{ listStyle: "none", padding: 0 }}>
+      <ul className="task-list">
         {tareas.map((tarea) => (
           <TaskItem
             key={tarea.id}
             tarea={tarea}
+            enCurso={idsEnCurso.includes(tarea.id)}
             onCompletar={onCompletar}
             onEliminar={onEliminar}
             onEditar={onEditar}
@@ -57,10 +55,12 @@ const TaskList = ({ tareas, onCompletar, onEliminar, onEditar, filtro, setFiltro
         ))}
       </ul>
 
-      {tareas.length === 0 && (
-        <p style={{ textAlign: "center", color: "#94a3b8", marginTop: "20px" }}>
-          🎉 No hay tareas en esta categoría o búsqueda.
-        </p>
+      {/* Mensajes de lista vacía diferenciados (RF11) */}
+      {totalTareas === 0 && (
+        <p className="estado-vacio">Aún no hay tareas. Crea una en "Nueva Tarea".</p>
+      )}
+      {totalTareas > 0 && tareas.length === 0 && (
+        <p className="estado-vacio">🎉 No hay tareas en esta categoría o búsqueda.</p>
       )}
     </div>
   );

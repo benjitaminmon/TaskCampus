@@ -1,111 +1,117 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import Button from "./Button";
 import Badge from "./Badge";
+import { validarTitulo } from "../utils/validarTitulo";
 
-const TaskItem = ({ tarea, onCompletar, onEliminar, onEditar }) => {
+const TaskItem = ({ tarea, enCurso, onCompletar, onEliminar, onEditar }) => {
   // Estados locales solo para la edición de ESTA tarea en particular
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(tarea.titulo);
   const [error, setError] = useState("");
+  // Marca si la edición se cancela con Escape (no debe guardar)
+  const cancelandoRef = useRef(false);
 
-  // Activa el modo edición (Exigencia RF06: Doble clic)
+  // Activa el modo edición (RF06: doble clic)
   const handleDoubleClick = () => {
+    if (enCurso) return;
     setIsEditing(true);
     setEditTitle(tarea.titulo);
     setError("");
   };
 
-  // Guarda los cambios
-  const handleGuardar = () => {
-    // Validación (Exigencia RF04: No guardar vacío y mostrar error)
-    if (editTitle.trim() === "") {
-      setError("El título no puede quedar vacío.");
-      return; 
-    }
-    
-    // Si el texto cambió realmente, llamamos a la API
-    if (editTitle.trim() !== tarea.titulo) {
-      onEditar(tarea.id, { titulo: editTitle.trim() });
-    }
-    
+  const cerrarEdicion = () => {
     setIsEditing(false);
     setError("");
   };
 
-  // Maneja las teclas Enter y Escape (Exigencia RF06)
+  // Guarda los cambios
+  const handleGuardar = async () => {
+    // Validación compartida con el formulario (RF04)
+    const errorValidacion = validarTitulo(editTitle);
+    if (errorValidacion) {
+      setError(errorValidacion);
+      return;
+    }
+
+    const limpio = editTitle.trim();
+    if (limpio === tarea.titulo) {
+      cerrarEdicion(); // sin cambios: no se hace petición
+      return;
+    }
+
+    // Solo se cierra si la operación funcionó; si falla, App muestra el error
+    const ok = await onEditar(tarea.id, { titulo: limpio });
+    if (ok) cerrarEdicion();
+  };
+
+  // Enter y Escape quitan el foco; onBlur decide si guardar o cancelar.
+  // Así el guardado ocurre en un solo lugar y no se ejecuta dos veces.
   const handleKeyDown = (e) => {
     if (e.key === "Enter") {
-      handleGuardar();
+      e.currentTarget.blur();
     } else if (e.key === "Escape") {
-      // Si se arrepiente, vuelve a la normalidad sin guardar
-      setIsEditing(false);
-      setEditTitle(tarea.titulo);
-      setError("");
+      cancelandoRef.current = true;
+      e.currentTarget.blur();
     }
   };
 
+  const handleBlur = () => {
+    if (cancelandoRef.current) {
+      cancelandoRef.current = false;
+      cerrarEdicion();
+      return;
+    }
+    handleGuardar();
+  };
+
   return (
-    <li
-      className="task-item"
-      style={{
-        display: "flex",
-        justifyContent: "space-between",
-        alignItems: "center",
-        backgroundColor: "#ffffff",
-        border: "1px solid #dbeafe",
-        borderRadius: "8px",
-        padding: "12px 16px",
-        marginBottom: "10px",
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center", gap: "10px", flex: 1 }}>
+    <li className="task-item">
+      <div className="task-info">
         <Badge texto={tarea.completada ? "completada" : "pendiente"} />
-        
+        {tarea.idRemoto === null && (
+          <Badge texto="local" titulo="Creada en esta sesión: la API simulada no la guarda" />
+        )}
+
         {/* Renderizado condicional: ¿Input o Texto normal? */}
         {isEditing ? (
-          <div style={{ display: "flex", flexDirection: "column", flex: 1, marginRight: "15px" }}>
+          <div className="task-edicion">
             <input
               type="text"
+              className="task-input"
               value={editTitle}
               onChange={(e) => setEditTitle(e.target.value)}
-              onBlur={handleGuardar}
+              onBlur={handleBlur}
               onKeyDown={handleKeyDown}
+              disabled={enCurso}
               autoFocus
-              style={{
-                padding: "6px 8px",
-                borderRadius: "4px",
-                border: "1px solid #cbd5e1",
-                outline: "none"
-              }}
+              aria-label="Editar título de la tarea"
             />
-            {error && <span style={{ color: "#dc2626", fontSize: "0.75rem", marginTop: "4px" }}>{error}</span>}
+            {error && <p className="form-error">{error}</p>}
           </div>
         ) : (
           <span
             onDoubleClick={handleDoubleClick}
             title="Haz doble clic para editar"
-            style={{
-              textDecoration: tarea.completada ? "line-through" : "none",
-              color: tarea.completada ? "#94a3b8" : "inherit",
-              cursor: "text",
-              flex: 1
-            }}
+            className={tarea.completada ? "task-titulo task-titulo--completada" : "task-titulo"}
           >
             {tarea.titulo}
           </span>
         )}
       </div>
 
-      <div style={{ display: "flex", gap: "8px", alignItems: "center", flexShrink: 0 }}>
+      {/* RF12: botones deshabilitados mientras hay una operación en curso */}
+      <div className="task-acciones">
         <Button
-          label={tarea.completada ? "Desmarcar" : "Completar"}
+          label={enCurso ? "Guardando..." : tarea.completada ? "Desmarcar" : "Completar"}
           onClick={() => onCompletar(tarea.id)}
           variant={tarea.completada ? "success" : "primary"}
+          disabled={enCurso || isEditing}
         />
         <Button
           label="Eliminar"
           onClick={() => onEliminar(tarea.id)}
           variant="danger"
+          disabled={enCurso || isEditing}
         />
       </div>
     </li>
